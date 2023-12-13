@@ -1,28 +1,14 @@
-import pickle as pkl
-import pandas as pd
-import os
-
-
-def get_pickle(pickle_path):
-    pickle = None
-    file_path = os.path.join(os.path.dirname(__file__), pickle_path)
-    # rb standards for read binary, and needed for pickles
-    with open(file_path, 'rb') as f:
-        pickle = pkl.load(f)
-    return pickle
-
-
-cosine_sim = get_pickle('cosine-similarities.pkl')
-indices = get_pickle('indicies.pkl')
-indices_to_name = get_pickle('indicies-to-name.pkl')
-
-
 class Models():
 
-    def _get_recommendation_indicies(self, id: int, cosine_sim=cosine_sim, num_recommend=10):
+    def __init__(self, cosine_sim, indices, indices_to_name):
+        self.cosine_sim = cosine_sim
+        self.indices = indices
+        self.indices_to_name = indices_to_name
+
+    def _get_recommendation_indicies(self, id: int, num_recommend=6):
 
         # Get the pairwsie similarity scores of all movies with that movie
-        sim_scores = list(enumerate(cosine_sim[id]))
+        sim_scores = list(enumerate(self.cosine_sim[id]))
         # Sort the movies based on the similarity scores
         sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
         # Get the scores of the 10 most similar movies
@@ -34,15 +20,15 @@ class Models():
 
     def get_recommendations_by_title(self, title: str):
 
-        if title not in indices:
+        if title not in self.indices:
             return [f"{title} not found"]
 
-        id = indices[title]
+        id = self.indices[title]
         recipe_indicies = self.get_recommendations_by_id(id)
 
         recommendations = []
         for i in recipe_indicies:
-            recommendations.append(indices_to_name[i])
+            recommendations.append(self.indices_to_name[i])
         return recommendations
 
     def get_recommendations_by_id(self, id: int):
