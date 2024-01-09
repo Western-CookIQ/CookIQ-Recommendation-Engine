@@ -50,7 +50,7 @@ def get_recommendations_by_id_handler(event, context):
         cursor = connection.cursor()
 
         # Example: Execute a query using data from the Lambda event
-        query = f"SELECT * FROM recommendations WHERE id={id}"
+        query = f"SELECT * FROM recommendations WHERE id={id_value}"
         # data = (event.get("value1"), event.get("value2"))
         # cursor.execute(query, data)
         cursor.execute(query)
