@@ -93,4 +93,4 @@ def get_recommendations_by_id_handler(event, context):
             'recommendations': result_data
         })
 
-    return result_data
+    return response
