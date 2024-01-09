@@ -1,14 +1,13 @@
 class Models():
 
-    def __init__(self, cosine_sim, indices, indices_to_name):
-        self.cosine_sim = cosine_sim
+    def __init__(self, indices, indices_to_name):
         self.indices = indices
         self.indices_to_name = indices_to_name
 
-    def _get_recommendation_indicies(self, id: int, num_recommend=6):
+    def _get_recommendation_indicies(self, id: int, num_recommend=2):
 
         # Get the pairwsie similarity scores of all movies with that movie
-        sim_scores = list(enumerate(self.cosine_sim[id]))
+        sim_scores = [[137739, 0.32], [31490, 0.2], [112140, 0.12]]
         # Sort the movies based on the similarity scores
         sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
         # Get the scores of the 10 most similar movies
