@@ -1,3 +1,4 @@
+import json
 import boto3
 import pickle
 import models
@@ -11,16 +12,16 @@ def get_pickle(model_key):
     return pickle.loads(s3.Bucket(s3_bucket).Object(model_key).get()['Body'].read())
 
 
-cosine_sim = get_pickle('cosine-similarities.pkl')
+# cosine_sim = get_pickle('cosine-similarities.pkl')
 indices = get_pickle('indicies.pkl')
 indices_to_name = get_pickle('indicies-to-name.pkl')
-model = models.Models(cosine_sim, indices, indices_to_name)
+model = models.Models(indices, indices_to_name)
 
 
 def get_recommendations_by_id_handler(event, context):
 
-    # setting up to handle
-    id = event['id']
+    # setting up to handler
+    id_value = event['pathParameters']['id']
 
     try:
         return {
@@ -33,9 +34,9 @@ def get_recommendations_by_id_handler(event, context):
                 "Access-Control-Allow-Origin": '*',
                 "X-Requested-With": '*'
             },
-            'body': {
-                "recommendations": model.get_recommendations_by_id(int(id))
-            }
+            'body': json.dumps({
+                "recommendations": model.get_recommendations_by_id(int(id_value))
+            })
         }
     except:
         return {
