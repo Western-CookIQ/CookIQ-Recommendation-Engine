@@ -1,7 +1,6 @@
 import json
 import boto3
 import pickle
-import models
 import psycopg2
 
 s3_bucket = 'recommendation-pickles'
