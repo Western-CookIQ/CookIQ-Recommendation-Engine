@@ -1,5 +1,5 @@
 import json
-import pandas
+import pandas as pd
 import boto3
 import pickle
 
@@ -22,20 +22,67 @@ def get_recommendations_handler(event, context):
 
     # get the top 30 similar recipes
     remaining = 30 - min(30,len(apriori_rules_df[apriori_rules_df['Base Product'] == given_recipe_index]))
-    
-    # get the top remaining similar recipes
-    sim_scores = list(enumerate(cosine_similarities[cosine_similarities['id'] == given_recipe_index]))
-    top_similar = sim_scores[1:remaining+1]
 
-     # Get the recipe indices and corresponding recipe similarity score
-    recipe_indices = [i[0] for i in top_similar]
-    recipe_similarity_scores = [i[1] for i in top_similar]
+    recipe_apriori_df = pd.DataFrame(columns = ['index', 'name', 'score'])
+
+    if remaining < 30:
+
+        df = apriori_rules_df[apriori_rules_df['Base Product'] == given_recipe_index]
+        
+        # iterate through rows of the dataframe
+        for _, row in df.iterrows():
+
+            
+            apriori_recipe_id = row['Add Product']
+            
+            df_id = recipes_df[recipes_df['id'] == apriori_recipe_id]['Unnamed: 0'].values[0]
+            recipe_name = recipes_df[recipes_df['id'] == apriori_recipe_id]['name'].values[0]
+            recipe_score = row['Support']
+            
+
+            values = [df_id, recipe_name, recipe_score]
+
+            recipe_apriori_df.loc[len(recipe_apriori_df)] = values
+
+    recipe_apriori_df['type'] = 'apriori'
+        
+        
+    # Select columns containing ids and scores
+    id_columns = [col for col in cosine_similarities.columns if col.startswith('id_')]
+    score_columns = [col for col in cosine_similarities.columns if col.startswith('score_')]
+
+    # list to contain pairs of ids and similarity scores
+    output = []
+
+    # iterate through ids and scores together
+    for id_col, score_col in zip(id_columns, score_columns):
+
+        # recipe ids
+        recipe_id = cosine_similarities[cosine_similarities['id'] == given_recipe_index][id_col].values[0]
+
+        # get index in dataframe from recipe id
+        df_id = recipes_df[recipes_df['id'] == recipe_id]['Unnamed: 0'].values[0]
+
+        # recipe similarity score
+        recipe_score = cosine_similarities[cosine_similarities['id'] == given_recipe_index][score_col].values[0]
+
+        # append the pair of df index and rceipe score to list
+        output.append([df_id, recipe_score])
+
+
+    # Get the scores of the remaining (0-30) most similar recipes
+    output = output[0:remaining]
+
+    # Get the recipe indices and corresponding recipe similarity score
+    recipe_indices = [i[0] for i in output]
+    recipe_similarity_scores = [i[1] for i in output]
 
     recommendations_df = recipes_df['name'].iloc[recipe_indices].to_frame().reset_index()
     recommendations_df['score'] = recipe_similarity_scores
-
-    # construct final response object
-    result_data = recommendations_df.to_dict(orient='records')
+    recommendations_df['type'] = 'cosine_sim'
+  
+    final_recommendation_df = pd.concat([recipe_apriori_df, recommendations_df])
+    result_data = final_recommendation_df.to_dict(orient='records')
 
     response = {
         'statusCode': 200 if result_data else 404,
