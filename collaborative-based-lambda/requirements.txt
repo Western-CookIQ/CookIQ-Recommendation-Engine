@@ -1,2 +1,2 @@
 boto3
-pandas
+pandas<2.0.0

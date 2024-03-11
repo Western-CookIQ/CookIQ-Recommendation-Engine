@@ -16,16 +16,19 @@ apriori_rules_df = get_pickle('apriori-rules.pkl')
 recipes_df = get_pickle('recipes-subset.pkl')
 cosine_similarities = get_pickle('cosine-similarities.pkl') # STILL REQUIRED
 
+def get_recipe_id(recipe_index):
+    return int(recipes_df['id'].iloc[recipe_index])
+
 def get_recommendations_handler(event, context):
     # get the recipe index from the path parameter
     given_recipe_index = int(event['pathParameters']['id'])
 
     # get the top 30 similar recipes
-    remaining = 30 - min(30,len(apriori_rules_df[apriori_rules_df['Base Product'] == given_recipe_index]))
+    remaining = 20 - min(20,len(apriori_rules_df[apriori_rules_df['Base Product'] == given_recipe_index]))
 
     recipe_apriori_df = pd.DataFrame(columns = ['index', 'name', 'score'])
 
-    if remaining < 30:
+    if remaining < 20:
 
         df = apriori_rules_df[apriori_rules_df['Base Product'] == given_recipe_index]
         
@@ -45,7 +48,8 @@ def get_recommendations_handler(event, context):
             recipe_apriori_df.loc[len(recipe_apriori_df)] = values
 
     recipe_apriori_df['type'] = 'apriori'
-        
+    recipe_ids = [get_recipe_id(i) for i in recipe_apriori_df['index']]
+    recipe_apriori_df['id'] = recipe_ids
         
     # Select columns containing ids and scores
     id_columns = [col for col in cosine_similarities.columns if col.startswith('id_')]
@@ -76,9 +80,12 @@ def get_recommendations_handler(event, context):
     # Get the recipe indices and corresponding recipe similarity score
     recipe_indices = [i[0] for i in output]
     recipe_similarity_scores = [i[1] for i in output]
+    recipe_ids = [get_recipe_id(i) for i in recipe_indices]
 
     recommendations_df = recipes_df['name'].iloc[recipe_indices].to_frame().reset_index()
     recommendations_df['score'] = recipe_similarity_scores
+    recommendations_df['id'] = recipe_ids
+
     recommendations_df['type'] = 'cosine_sim'
   
     final_recommendation_df = pd.concat([recipe_apriori_df, recommendations_df])
