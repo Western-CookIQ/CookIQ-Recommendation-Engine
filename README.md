@@ -25,12 +25,12 @@ Then
 
 Run the following to build an image called “recommendation-image” based on arm64 architecture, the : mean that we specific the latest image that has been made (in the case where you re-make this multiple times it would replace the latest image each time)
 
-`docker build --platform=linux/arm64 -t recommendation-image:latest .`
+`docker build --platform=linux/arm64 -t recommendation-image:latest-[NAME] .`
 
 Run the following to link the image to the AWS repository
 
-`docker image tag recommendation-image:latest 853077549349.dkr.ecr.us-east-2.amazonaws.com/cookiq:latest`
+`docker image tag recommendation-image:latest-[NAME] 853077549349.dkr.ecr.us-east-2.amazonaws.com/cookiq:latest`
 
 Run the following to push the image to ECR
 
-`docker push 853077549349.dkr.ecr.us-east-2.amazonaws.com/cookiq:latest`
+`docker push 853077549349.dkr.ecr.us-east-2.amazonaws.com/cookiq:latest-[NAME]`
