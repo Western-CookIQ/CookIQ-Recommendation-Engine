@@ -1,0 +1,4 @@
+langchain
+cohere 
+faiss-cpu 
+psycopg2-binary
