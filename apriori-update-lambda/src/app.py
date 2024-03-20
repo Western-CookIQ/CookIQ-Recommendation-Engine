@@ -31,6 +31,7 @@ def get_recommendations_by_id_handler(event, context):
     cursor = None
 
     apriori_prev_df = get_pickle('apriori-df.pkl')
+
     # convert rating_dict column from string to list
     if isinstance(apriori_prev_df['rating_dict'][0], str):
         apriori_prev_df['rating_dict'] = apriori_prev_df['rating_dict'].apply(eval)
@@ -44,7 +45,7 @@ def get_recommendations_by_id_handler(event, context):
         cursor = connection.cursor()
 
         # Example: Execute a query using data from the Lambda event
-        query = f"SELECT recipe_id, user_id, rating FROM meal WHERE rating >= 0"
+        query = f"SELECT user_id, recipe_id, rating FROM meal WHERE rating >= 0"
         cursor.execute(query)
 
         # Fetch all rows from the result set
@@ -56,20 +57,25 @@ def get_recommendations_by_id_handler(event, context):
         for recommendation in formatted_recommendations:
             user_id = recommendation['user_id']
             new_dict = recommendation['data']
+            print("new_dict", new_dict)
 
             # find row index for associated user_id
             if user_id not in apriori_prev_df['user_id'].values:
                 new_row = {'user_id': user_id, 'rating_dict': [new_dict]}
-                apriori_prev_df = apriori_prev_df.append(new_row, ignore_index=True)
+                new_row_df = pd.DataFrame(columns=apriori_prev_df.columns)
+                new_row_df = new_row_df.append(new_row, ignore_index=True)
+                apriori_prev_df = apriori_prev_df.append(new_row_df, ignore_index=True)
+    
+            else:
+                # find row index for associated user_id
+                row_index = apriori_prev_df.index[apriori_prev_df['user_id'] == user_id][0]
 
-            row_index = apriori_prev_df.index[apriori_prev_df['user_id'] == user_id][0]
-            #append new_dict to rating_dict of associated user_id
-            apriori_prev_df.at[row_index, 'rating_dict'].append(new_dict)
+                #appen new_dict to rating_dict of associated user_id
+                apriori_prev_df.at[row_index, 'rating_dict'].append(new_dict)
         
         # update the apriori-df.pkl file with the new rating_dict
-        file_path = '/tmp/apriori-df.pkl'
-        apriori_prev_df.to_pickle(file_path)
-        s3.Bucket(s3_bucket).upload_file(file_path, 'apriori-df.pkl')
+        df_file_path = '/tmp/apriori-df.pkl'
+        apriori_prev_df.to_pickle(df_file_path)
 
         recipe_listing = apriori_prev_df['rating_dict']
 
@@ -81,8 +87,6 @@ def get_recommendations_by_id_handler(event, context):
 
             transformed_recipe_listing.append(sub_list)
 
-        print(transformed_recipe_listing)
-        
         # transactions, min support, min confidence, min lift parameters to get relevant rules
         rules = apriori(transactions = transformed_recipe_listing, min_support = 10/9955, min_confidence = 0.2, min_lift = 3, min_length=1,max_length = 2)
         results = list(rules)
@@ -101,6 +105,7 @@ def get_recommendations_by_id_handler(event, context):
         apriori_recipe_df.to_pickle(file_path) 
 
         # Upload the new apriori-rules.pkl file to S3
+        s3.Bucket(s3_bucket).upload_file(df_file_path, 'apriori-df.pkl')
         s3.Bucket(s3_bucket).upload_file(file_path, 'apriori-rules.pkl')
 
     except psycopg2.Error as e:
