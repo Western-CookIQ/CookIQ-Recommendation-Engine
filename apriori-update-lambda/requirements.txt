@@ -1,0 +1,4 @@
+boto3
+pandas<2.0.0
+psycopg2-binary
+apyori
