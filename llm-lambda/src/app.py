@@ -1,27 +1,33 @@
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import CohereEmbeddings
-from langchain import PromptTemplate
+from langchain.prompts import PromptTemplate
 from langchain_community.llms import Cohere
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import LLMChain
 import os
 import psycopg2
-import requests
+# import requests
 import json
+# import boto3
 
-os.environ["COHERE_API_KEY"] = "puEKBbR2VULeFOovwmLsKpgDErnmYVUgMPYyCMbH"
+
+os.environ["COHERE_API_KEY"] = "WGzfXKtC8VBt9mHclzdbByyDaJRzRiEfv582qDLY"
 embeddings = CohereEmbeddings(model="embed-english-light-v3.0")
 
+# s3_bucket = 'cookiq-llm2'
+# model_key = 'final.txt'
+# s3 = boto3.resource('s3')
 
-def get_titles():
-    return requests.get(
-        "https://cookiq-llm2.s3.us-east-2.amazonaws.com/final.txt"
-    ).content
+
+# def get_titles():
+#     return requests.get(
+#         "https://cookiq-llm2.s3.us-east-2.amazonaws.com/final.txt"
+#     )
 
 
 def create_db():
-    loader = TextLoader(fp)
+    loader = TextLoader('./titles.txt')
     transcript = loader.load()
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=64, chunk_overlap=0)
@@ -89,8 +95,6 @@ def get_response_from_query(question, recipe):
 def lambda_handler(event, context):
     query = event["queryStringParameters"]["query"]
 
-    print(f"Query: {query}")
-
     db = create_db()
     search_result = db.similarity_search(query)
     recipe = search_result[0].page_content.split(";")[0].strip()
@@ -99,16 +103,23 @@ def lambda_handler(event, context):
     response = get_response_from_query(query, formatted_recipe)
 
     res_body = {
-        "query": query,
-        "recipe": recipe,
-        "recipe_info": recipe_info,
-        "formatted_recipe": formatted_recipe,
+        # "query": query,
+        # "recipe": recipe,
+        # "recipe_info": recipe_info,
+        # "formatted_recipe": formatted_recipe,
         "response": response,
     }
 
     http_response = {
         "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
+       'headers': {
+            "Content-Type": 'application/json',
+            "Access-Control-Allow-Headers": 'Content-Type,X-Amz- Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+            "Access-Control-Allow-Methods": 'OPTIONS,GET',
+            "Access-Control-Allow-Credentials": True,
+            "Access-Control-Allow-Origin": '*',
+            "X-Requested-With": '*'
+        },
         "body": json.dumps(res_body),
     }
     return http_response
