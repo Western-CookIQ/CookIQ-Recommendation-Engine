@@ -12,7 +12,7 @@ import json
 # import boto3
 
 
-os.environ["COHERE_API_KEY"] = "WGzfXKtC8VBt9mHclzdbByyDaJRzRiEfv582qDLY"
+os.environ["COHERE_API_KEY"] = "4m1kzTf4OQmGP5sqbpAjKWFL4S0ohgJgqPvbU8qC"
 embeddings = CohereEmbeddings(model="embed-english-light-v3.0")
 
 # s3_bucket = 'cookiq-llm2'
